@@ -212,12 +212,13 @@ ok(1);
 
 
 echo "Querying";
-my $r = $p->query(7);
-ok($r->{'GGGGGGG'}->[0]->[0], 1);
-
-echo "Querying";
 my $r = $p->query(14);
 ok($r->{'MFVLLVAYALLHMH'}->[0]->[0], 97);
+
+echo "Querying";
+my $r = $p->query([4..14]);
+ok($r->{'GGGG'}->[0]->[0], 1);
+
 
 echo "Checking sequence file";
 ok(-s "$wd/seqs");

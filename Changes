@@ -12,3 +12,7 @@ Revision history for Perl extension Bio::Tools::Prepeat.
 	- can handle JUZBOX 
 	- relpos() fixed
 	- query() fixed
+
+0.04  Fri, 25 Apr 2003 17:29:57 +0800
+	- can query repeats within a range
+

@@ -1,7 +1,7 @@
 package Bio::Tools::Prepeat;
 use 5.006;
 use strict;
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 use XSLoader;
 XSLoader::load 'Bio::Tools::Prepeat';
 use Exporter;
@@ -10,6 +10,8 @@ our @EXPORT_OK = qw(random_sequence);
 use Cwd qw(abs_path);
 use String::Random qw(random_string);
 use IO::File;
+
+use Data::Dumper;
 
 our @amino = 'A'..'Z';
 sub random_sequence { ref($_[0]) ? shift : undef;random_string('0'x(shift), \@amino) }
@@ -115,27 +117,37 @@ sub relpos {
     return ($seqid, $pos);
 }
 
+# absolute position
+sub abspos {
+    my ($pkg, $seqid, $pos) = @_;
+    return $pkg->{acclen}->[$seqid] + $pos;
+}
+
 sub coincidence_length {
     my ($pkg, $prev, $this) = @_;
     my @prevrel = $pkg->relpos($prev);
     my @thisrel = $pkg->relpos($this);
-    my $str_a = substr($pkg->{seqarr}->[$prevrel[0]], $prevrel[1], $pkg->{length});
-    my $str_b = substr($pkg->{seqarr}->[$thisrel[0]], $thisrel[1], $pkg->{length});
+    my @range = @{$pkg->{length}};
+    my @ret;
 
-    return undef if length $str_a != $pkg->{length} && $str_b != $pkg->{length};
-    return undef if $str_a ne $str_b;
+    foreach my $len (@range){
+	my $str_a = substr($pkg->{seqarr}->[$prevrel[0]], $prevrel[1], $len);
+	my $str_b = substr($pkg->{seqarr}->[$thisrel[0]], $thisrel[1], $len);
+	last if length $str_a != $len || length $str_b != $len;
+	last if $str_a ne $str_b;
+
 #    print "$prev, $this => ", substr($pkg->{seqarr}->[$prevrel[0]], $prevrel[1], $pkg->{length}), '/', substr($pkg->{seqarr}->[$thisrel[0]], $thisrel[1], $pkg->{length}), $/;
-
-
-
-    return [ \@prevrel, \@thisrel ];
+	push @ret, [ \@prevrel, \@thisrel, $len ];
+    }
+    \@ret;
 }
 
+use List::Util qw/min/;
 sub query {
     my ($pkg, $length) = @_;
     die "Index files are not built or loaded. Please use 'buildidx' or 'loadidx' first\n" unless $pkg->{built};
     die "Length of a repeat sequence must exceed 3\n" unless $length >= 3;
-    $pkg->{length} = $length;
+    $pkg->{length} = ref($length) ? [sort{$a<=>$b}@$length] : [ $length ];
     open R, '>', $pkg->{wd}."/result";
     my ($prev, $this);
     foreach (bigram_set){
@@ -148,16 +160,19 @@ sub query {
 	foreach $prev (@posarr){
 	    next if $checked{$prev};
 	    foreach $this (@posarr){
-		if($this - $prev > $pkg->{length}){
-		    my $occ = $pkg->coincidence_length($prev, $this);
-		    if(ref $occ){
-			$checked{$this} = 1;
-			print R
-			    join ' ',
-			    substr($pkg->{seqarr}->[$occ->[0]->[0]],
-				   $occ->[0]->[1], $pkg->{length}),
-			    "@{$occ->[0]} @{$occ->[1]}\n";
+		if($this - $prev > min( @{$pkg->{length}})){
+		    my $occs = $pkg->coincidence_length($prev, $this);
+		    if(ref $occs){
+			foreach my $occ (@{$occs}){
+			    $checked{$pkg->abspos($occ->[1]->[0], $occ->[1]->[1])} = 1;
+#			    print substr($pkg->{seqarr}->[$occ->[0]->[0]],$occ->[0]->[1], $occ->[2]),$/;
 
+			    print R
+				join ' ',
+				substr($pkg->{seqarr}->[$occ->[0]->[0]],
+				       $occ->[0]->[1], $occ->[2]),
+				"@{$occ->[0]} @{$occ->[1]}\n";
+			}
 		    }
 		}
 	    }
@@ -171,7 +186,12 @@ sub query {
     my $ret;
     while(chomp($_=<R>)){
 	my @e = split /\s/, $_;
-	next unless length $e[0]  == $length;
+	if(@{$pkg->{length}} == 1){
+	    next unless length $e[0] == $pkg->{length}->[0];
+	}
+	else{
+	    next unless length $e[0] >= $length->[0] && length $e[0] <= $length->[1];
+	}
 	push @{$ret->{$e[0]}}, ($e[0] ne $prep ? ([ @e[1..2] ], [ @e[3..4] ]) : [ @e[3..4] ]);
 	$prep = $e[0];
     }
@@ -244,6 +264,12 @@ It loads previously built bigram index files.
     $p->query(10);
 
 It returns a reference to repeat sequences of length 10 with sequence ids they belong to and their positions in sequences.
+
+You can also give it a range, say
+
+    $p->query([4..10]);
+
+It returns a reference to repeat sequences from length 4 to length 10 with sequence ids they belong to and their positions in sequences.
 
 =head2 random_sequence
 
