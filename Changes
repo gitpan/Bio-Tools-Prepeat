@@ -1,0 +1,6 @@
+Revision history for Perl extension Bio::Tools::Prepeat.
+
+0.01  Sun Apr 20 23:15:31 2003
+	- original version; created by h2xs 1.21 with options
+		-A Bio::Tools::Prepeat
+
