@@ -1,7 +1,7 @@
 package Bio::Tools::Prepeat;
 use 5.006;
 use strict;
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 use XSLoader;
 XSLoader::load 'Bio::Tools::Prepeat';
 use Exporter;
@@ -166,6 +166,7 @@ sub query {
 		    my $occs = $pkg->coincidence_length($prev, $this);
 		    if(ref $occs){
 			foreach my $occ (@{$occs}){
+			    $checked{$pkg->abspos($occ->[0]->[0], $occ->[0]->[1])} = 1;
 #			    print substr($pkg->{seqarr}->[$occ->[0]->[0]],$occ->[0]->[1], $occ->[2]),$/;
 
 			    print R
@@ -173,7 +174,6 @@ sub query {
 				substr($pkg->{seqarr}->[$occ->[0]->[0]],
 				       $occ->[0]->[1], $occ->[2]),
 				"@{$occ->[0]} @{$occ->[1]}\n";
-			    $checked{$pkg->abspos($occs->[-1]->[0], $occs->[-1]->[1])} = 1;
 			}
 		    }
 		}
