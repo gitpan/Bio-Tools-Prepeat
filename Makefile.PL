@@ -3,7 +3,7 @@ use ExtUtils::MakeMaker;
 
 WriteMakefile(
     'NAME'		=> 'Bio::Tools::Prepeat',
-    'VERSION_FROM'	=> 'Prepeat.pm', 
+    'VERSION_FROM'	=> 'VERSION', 
     'PREREQ_PM'		=> {
 	'Cwd' => '2.06',
 	'String::Random' => '0.198',

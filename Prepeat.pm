@@ -1,7 +1,7 @@
 package Bio::Tools::Prepeat;
 use 5.006;
 use strict;
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 use XSLoader;
 XSLoader::load 'Bio::Tools::Prepeat';
 use Exporter;
@@ -13,7 +13,8 @@ use IO::File;
 
 use Data::Dumper;
 
-our @amino = 'A'..'Z';
+our @amino = qw/A C D E F G H I K L M N P Q R S T V W Y/;
+our @extamino = 'A'..'Z'; # extended amino acid
 sub random_sequence { ref($_[0]) ? shift : undef;random_string('0'x(shift), \@amino) }
 
 sub new {
@@ -36,11 +37,11 @@ sub reset {
 
 sub feed { push @{(shift)->{seqarr}}, map{uc$_}@_ }
 
-# cartesian product over @amino X @amino
+# cartesian product over @extamino X @extamino
 sub bigram_set {
     my @ret;
-    foreach my $f (@amino){
-	foreach my $s (@amino){
+    foreach my $f (@extamino){
+	foreach my $s (@extamino){
 	    push @ret, $f.$s;
 	}
     }
@@ -133,9 +134,10 @@ sub coincidence_length {
     foreach my $len (@range){
 	my $str_a = substr($pkg->{seqarr}->[$prevrel[0]], $prevrel[1], $len);
 	my $str_b = substr($pkg->{seqarr}->[$thisrel[0]], $thisrel[1], $len);
+#	print "$len $str_a $str_b$/" if $str_a =~/^ACL/o || $str_b =~ /^ACL/o;
+
 	last if length $str_a != $len || length $str_b != $len;
 	last if $str_a ne $str_b;
-
 #    print "$prev, $this => ", substr($pkg->{seqarr}->[$prevrel[0]], $prevrel[1], $pkg->{length}), '/', substr($pkg->{seqarr}->[$thisrel[0]], $thisrel[1], $pkg->{length}), $/;
 	push @ret, [ \@prevrel, \@thisrel, $len ];
     }
@@ -164,7 +166,6 @@ sub query {
 		    my $occs = $pkg->coincidence_length($prev, $this);
 		    if(ref $occs){
 			foreach my $occ (@{$occs}){
-			    $checked{$pkg->abspos($occ->[1]->[0], $occ->[1]->[1])} = 1;
 #			    print substr($pkg->{seqarr}->[$occ->[0]->[0]],$occ->[0]->[1], $occ->[2]),$/;
 
 			    print R
@@ -172,6 +173,7 @@ sub query {
 				substr($pkg->{seqarr}->[$occ->[0]->[0]],
 				       $occ->[0]->[1], $occ->[2]),
 				"@{$occ->[0]} @{$occ->[1]}\n";
+			    $checked{$pkg->abspos($occs->[-1]->[0], $occs->[-1]->[1])} = 1;
 			}
 		    }
 		}
@@ -182,20 +184,21 @@ sub query {
     close R;
 
     open R, $pkg->{wd}."/result" or die "Cannot open result file\n";
-    my $prep; # previous repeat
     my $ret;
     while(chomp($_=<R>)){
 	my @e = split /\s/, $_;
-	if(@{$pkg->{length}} == 1){
-	    next unless length $e[0] == $pkg->{length}->[0];
-	}
-	else{
-	    next unless length $e[0] >= $length->[0] && length $e[0] <= $length->[1];
-	}
-	push @{$ret->{$e[0]}}, ($e[0] ne $prep ? ([ @e[1..2] ], [ @e[3..4] ]) : [ @e[3..4] ]);
-	$prep = $e[0];
+	$ret->{$e[0]}->{join q/ /,@e[1..2]} = 1;
+	$ret->{$e[0]}->{join q/ /,@e[3..4]} = 1;
     }
     close R;
+    foreach (keys %{$ret}){
+	$ret->{$_} = [ 
+		       sort{ $a->[0] <=> $b->[0] }
+		       sort{ $a->[1] <=> $b->[1] }
+		       map { [split/ /] }
+		       keys %{$ret->{$_}}
+		       ];
+    }
     $ret;
 }
 

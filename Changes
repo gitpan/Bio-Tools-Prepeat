@@ -16,3 +16,6 @@ Revision history for Perl extension Bio::Tools::Prepeat.
 0.04  Fri, 25 Apr 2003 17:29:57 +0800
 	- can query repeats within a range
 
+0.05  Thu,  1 May 2003 16:05:24 +0800
+	- query() fixed
+	- @extamino added for distinguishing from canonical amino acids
