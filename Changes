@@ -7,3 +7,8 @@ Revision history for Perl extension Bio::Tools::Prepeat.
 0.02  Thu, 24 Apr 2003 20:58:05 +0800
 	- redundancy of query result is eliminated.
 	- random_sequence() becomes a method too.
+
+0.03  Fri, 25 Apr 2003 12:03:41 +0800
+	- can handle JUZBOX 
+	- relpos() fixed
+	- query() fixed
