@@ -7,8 +7,11 @@ $wd = './wd';
 sub echo { printf("%-45s ... ", $_[0]) }
 
 
+# ----------------------------------------------------------------------
+
 use Bio::Tools::Prepeat qw(random_sequence);
 
+print "\n--- Protein sequence test ---\n";
 echo "Initiating object";
 my $p = Bio::Tools::Prepeat->new( wd => $wd );
 ok(1);
@@ -30,6 +33,7 @@ $p->loadidx();
 ok(1);
 
 echo "Querying";
+use YAML;
 $p->query(4);
 ok(1);
 
@@ -39,5 +43,13 @@ ok(-s "$wd/seqs");
 echo "Checking repeats file";
 ok(-s "$wd/result");
 
-map{unlink $_} glob("$wd/*");
-rmdir $wd;
+echo "Cleaning index";
+$p->cleanidx();
+ok(!-e $wd);
+
+echo "Generating random protein sequence";
+ok(length($p->random_sequence(1000000).random_sequence(100000)), 1100000);
+
+
+# ----------------------------------------------------------------------
+

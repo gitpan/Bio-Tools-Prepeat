@@ -4,3 +4,6 @@ Revision history for Perl extension Bio::Tools::Prepeat.
 	- original version; created by h2xs 1.21 with options
 		-A Bio::Tools::Prepeat
 
+0.02  Thu, 24 Apr 2003 20:58:05 +0800
+	- redundancy of query result is eliminated.
+	- random_sequence() becomes a method too.

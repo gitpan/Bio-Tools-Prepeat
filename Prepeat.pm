@@ -1,7 +1,7 @@
 package Bio::Tools::Prepeat;
 use 5.006;
 use strict;
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 use XSLoader;
 XSLoader::load 'Bio::Tools::Prepeat';
 use Exporter;
@@ -12,7 +12,7 @@ use String::Random qw(random_string);
 use IO::File;
 
 our @amino = qw/A C D E F G H I L M N P Q R S T V W Y Z/;
-sub random_sequence { random_string('0'x(shift), \@amino) }
+sub random_sequence { ref($_[0]) ? shift : undef;random_string('0'x(shift), \@amino) }
 
 sub new {
     my $pkg = shift;
@@ -129,7 +129,7 @@ sub coincidence_length {
 sub query {
     my ($pkg, $length) = @_;
     die "Index files are not built or loaded. Please use 'buildidx' or 'loadidx' first\n" unless $pkg->{built};
-    die "Length of a repeat sequence must exceeds 3\n" unless $length >= 3;
+    die "Length of a repeat sequence must exceed 3\n" unless $length >= 3;
     $pkg->{length} = $length;
     open R, '>', $pkg->{wd}."/result";
     my ($prev, $this);
@@ -161,11 +161,19 @@ sub query {
     my $ret;
     while(chomp($_=<R>)){
 	my @e = split /\s/, $_;
-	push @{$ret->{$e[0]}}, $e[0] ne $prep ? ([ @e[1..2] ], [ @e[3..4] ]) : [ @e[3..4] ];
+	push @{$ret->{$e[0]}}, $e[0] != $prep ? ([ @e[1..2] ], [ @e[3..4] ]) : [ @e[3..4] ];
     }
     close R;
     $ret;
 }
+
+
+sub cleanidx {
+    map{unlink $_} glob($_[0]->{wd}."/*");
+    rmdir $_[0]->{wd};
+}
+
+
 
 1;
 __END__
@@ -226,6 +234,11 @@ It loads previously built bigram index files.
 It returns a reference to repeat sequences of length 10 with sequence ids they belong to and their positions in sequences.
 
 =head2 random_sequence
+
+
+   $p->random_sequence(100000);
+
+or you may use it as a plain function.
 
     use Bio::Tools::Prepeat qw(random_sequence);
     print random_sequence(100000);
